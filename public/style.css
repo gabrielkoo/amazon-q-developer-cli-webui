@@ -1,0 +1,378 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    background-color: #1a1a1a;
+    color: #ffffff;
+    line-height: 1.4;
+}
+
+.container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 20px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Thinking animation styling */
+.thinking-animation {
+    color: #888;
+    font-style: italic;
+    margin: 5px 0;
+}
+
+.thinking-dots {
+    display: inline-block;
+    width: 20px;
+    text-align: left;
+}
+
+/* Interactive menu styling */
+.interactive-menu {
+    background-color: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    font-family: inherit;
+}
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
+}
+
+h1 {
+    color: #ff9500;
+    font-size: 24px;
+}
+
+.status {
+    padding: 5px 15px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status.connected {
+    background-color: #28a745;
+    color: white;
+}
+
+.status.disconnected {
+    background-color: #dc3545;
+    color: white;
+}
+
+.status.error {
+    background-color: #ff6b6b;
+    color: white;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #000;
+    border: 1px solid #333;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.terminal {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background-color: #000;
+    color: #ffffff;
+    min-height: 400px;
+}
+
+/* Preserve ANSI colors and formatting */
+.terminal .ansi-bright-black { color: #555; }
+.terminal .ansi-bright-red { color: #ff5555; }
+.terminal .ansi-bright-green { color: #55ff55; }
+.terminal .ansi-bright-yellow { color: #ffff55; }
+.terminal .ansi-bright-blue { color: #5555ff; }
+.terminal .ansi-bright-magenta { color: #ff55ff; }
+.terminal .ansi-bright-cyan { color: #55ffff; }
+.terminal .ansi-bright-white { color: #ffffff; }
+.terminal .ansi-red { color: #aa0000; }
+.terminal .ansi-green { color: #00aa00; }
+.terminal .ansi-yellow { color: #aa5500; }
+.terminal .ansi-blue { color: #0000aa; }
+.terminal .ansi-magenta { color: #aa00aa; }
+.terminal .ansi-cyan { color: #00aaaa; }
+.terminal .ansi-white { color: #aaaaaa; }
+.terminal .ansi-bold { font-weight: bold; }
+.terminal .ansi-dim { opacity: 0.7; }
+.terminal .ansi-underline { text-decoration: underline; }
+
+.input-section {
+    border-top: 1px solid #333;
+    padding: 15px;
+    background-color: #111;
+    border: 2px solid #ff9500; /* Make it more visible for debugging */
+    display: none; /* Hidden by default */
+}
+
+.input-section[style*="display: block"] {
+    background-color: #222; /* Different background when visible */
+    display: block !important; /* Force visibility when shown */
+}
+
+.input-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+/* Terminal block styles */
+.terminal-block {
+    margin-bottom: 8px;
+    padding: 8px;
+    border-radius: 4px;
+    border-left: 3px solid transparent;
+    white-space: pre-wrap; /* Preserve whitespace and line breaks */
+    line-height: 1.2; /* Reduce line spacing */
+}
+
+.terminal-block-system {
+    border-left-color: #666;
+    background-color: rgba(102, 102, 102, 0.1);
+}
+
+.terminal-block-user {
+    border-left-color: #4CAF50;
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.terminal-block-bot {
+    border-left-color: #2196F3;
+    background-color: rgba(33, 150, 243, 0.1);
+}
+
+.terminal-block:last-child {
+    margin-bottom: 0;
+}
+
+/* Select Interface Styles */
+.select-interface {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    margin: 10px 0;
+    padding: 15px;
+    display: none;
+}
+
+.select-header {
+    margin-bottom: 15px;
+}
+
+.select-title {
+    color: #ff9500;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.select-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.select-option {
+    background: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #e0e0e0;
+    padding: 10px 15px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 14px;
+}
+
+.select-option:hover {
+    background: #3a3a3a;
+    border-color: #555;
+}
+
+.select-option.selected {
+    background: #0d7377;
+    border-color: #14a085;
+    color: #ffffff;
+}
+
+.select-option.selected:hover {
+    background: #0e8287;
+}
+
+.select-controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.select-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+.select-btn.cancel {
+    background: #6c757d;
+    color: white;
+}
+
+.select-btn.cancel:hover {
+    background: #5a6268;
+}
+
+.prompt-indicator {
+    color: #ff9500;
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 1.4;
+    padding-top: 10px; /* Align with textarea padding */
+    flex-shrink: 0;
+}
+
+#userInput {
+    flex: 1;
+    background-color: #222;
+    color: #ffffff;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: none;
+    min-height: 72px; /* 3 rows * 24px line height */
+    max-height: 240px; /* 10 rows * 24px line height */
+    line-height: 1.4;
+    overflow-y: auto;
+    transition: height 0.1s ease;
+}
+
+#userInput:focus {
+    outline: none;
+    border-color: #ff9500;
+    box-shadow: 0 0 5px rgba(255, 149, 0, 0.3);
+}
+
+.input-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+
+
+button {
+    background-color: #ff9500;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+button:hover:not(:disabled) {
+    background-color: #e6850e;
+}
+
+button:disabled {
+    background-color: #666;
+    cursor: not-allowed;
+}
+
+
+
+#clearBtn {
+    background-color: #6c757d;
+}
+
+#clearBtn:hover {
+    background-color: #5a6268;
+}
+
+/* Scrollbar styling */
+.terminal::-webkit-scrollbar {
+    width: 8px;
+}
+
+.terminal::-webkit-scrollbar-track {
+    background: #222;
+}
+
+.terminal::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+.terminal::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+/* Streaming animation */
+.streaming-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 14px;
+    background-color: #ff9500;
+    animation: blink 1s infinite;
+    margin-left: 2px;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+
+
+}

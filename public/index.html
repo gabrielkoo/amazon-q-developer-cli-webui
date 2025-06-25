@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon Q CLI WebUI</title>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // For cache busting
+        const script = document.createElement('script');
+        script.src = 'script.js?ts=' + Date.now();
+        script.type = 'text/javascript';
+        script.defer = true;
+        document.head.appendChild(script);
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Amazon Q CLI WebUI</h1>
+            <div class="status" id="status">Disconnected</div>
+        </header>
+
+        <div class="chat-container">
+            <div class="terminal" id="terminal"></div>
+
+            <div class="input-section" id="inputSection" style="display: none;">
+                <div class="input-line">
+                    <span class="prompt-indicator" id="promptIndicator"></span>
+                    <textarea
+                        id="userInput"
+                        placeholder="Type your message here... (Press Cmd+Enter on Mac or Ctrl+Enter on Windows to send)"
+                        rows="3"
+                    ></textarea>
+                </div>
+                <div class="input-controls">
+                    <button id="sendBtn">Send</button>
+                    <button id="clearBtn">Clear Input</button>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+</body>
+</html>
