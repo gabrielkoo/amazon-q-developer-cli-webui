@@ -1,6 +1,8 @@
-# Amazon Q CLI WebUI
+# Amazon Q Developer CLI WebUI
 
 A web-based interface for Amazon Q CLI that provides streaming token display, ASCII formatting preservation, and interactive textarea prompts for multiline input.
+
+![Amazon Q Developer CLI WebUI](/screenshot.jpg)
 
 ## Features
 
