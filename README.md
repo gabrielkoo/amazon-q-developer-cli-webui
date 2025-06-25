@@ -4,6 +4,11 @@ A web-based interface for Amazon Q CLI that provides streaming token display, AS
 
 ![Amazon Q Developer CLI WebUI](/screenshot.jpg)
 
+## Why?
+
+- Not everyone could install it - e.g. Windows is not supported / Installing WSL is a bit hard for some of us / Not allowed to install
+- You are not always beside your main computer/server - you might want some Amazon Q CLI features in your e.g. mobile phone when needed
+
 ## Features
 
 - **Streaming Display**: Tokens are displayed with a typing effect to simulate real-time streaming
@@ -11,6 +16,7 @@ A web-based interface for Amazon Q CLI that provides streaming token display, AS
 - **Interactive Prompts**: Prompts starting with "> " are converted to textarea inputs for multiline support
 - **Real-time Communication**: Uses WebSockets for real-time bidirectional communication
 - **Terminal-like Interface**: Dark theme with monospace font for authentic terminal experience
+- **Q CLI Commands**: Use Q CLI Chat commands like `/help` or `/model`
 
 ## Installation
 
@@ -76,6 +82,14 @@ For development with auto-restart:
 ```bash
 npm run dev
 ```
+
+## Production
+
+A few options to make your Q Developer CLI Web UI available when you are not running it directly from your primary computer/server:
+
+- CloudFlare Tunnel
+- TailScale
+- Open the `3000` port of your server and set up IP whitelisting
 
 ## Requirements
 
