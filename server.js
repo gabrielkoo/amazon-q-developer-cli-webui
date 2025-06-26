@@ -3,6 +3,8 @@ const http = require('http');
 const socketIo = require('socket.io');
 const pty = require('node-pty');
 const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 
 const app = express();
 const server = http.createServer(app);
@@ -24,6 +26,53 @@ const sessions = new Map();
 
 // Store session buffers to handle split ANSI sequences
 const sessionBuffers = new Map();
+
+// Ensure uploads directory exists
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR);
+}
+
+// Multer storage config: save directly to uploads directory
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, UPLOADS_DIR);
+    },
+    filename: function (req, file, cb) {
+        // Preserve original filename, handle duplicates by adding timestamp if needed
+        const originalName = file.originalname;
+        const filePath = path.join(UPLOADS_DIR, originalName);
+        
+        if (fs.existsSync(filePath)) {
+            const ext = path.extname(originalName);
+            const name = path.basename(originalName, ext);
+            const timestamp = Date.now();
+            cb(null, `${name}_${timestamp}${ext}`);
+        } else {
+            cb(null, originalName);
+        }
+    }
+});
+const upload = multer({ storage });
+
+// Upload endpoint (supports multiple files/folders)
+app.post('/upload', upload.array('files'), (req, res) => {
+    res.json({ success: true, files: req.files.map(f => f.originalname) });
+});
+
+// List files in uploads directory
+app.get('/files', (req, res) => {
+    if (!fs.existsSync(UPLOADS_DIR)) return res.json({ files: [] });
+    const files = fs.readdirSync(UPLOADS_DIR);
+    res.json({ files });
+});
+
+// Download file by name from uploads directory
+app.get('/download/:filename', (req, res) => {
+    const filePath = path.join(UPLOADS_DIR, req.params.filename);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
+    res.download(filePath);
+});
 
 io.on('connection', (socket) => {
 

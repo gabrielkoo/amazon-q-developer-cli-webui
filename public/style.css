@@ -42,7 +42,6 @@ body {
     margin: 10px 0;
     font-family: inherit;
 }
-}
 
 header {
     display: flex;
@@ -296,8 +295,6 @@ h1 {
     margin-top: 10px;
 }
 
-
-
 button {
     background-color: #ff9500;
     color: white;
@@ -318,8 +315,6 @@ button:disabled {
     background-color: #666;
     cursor: not-allowed;
 }
-
-
 
 #clearBtn {
     background-color: #6c757d;
@@ -373,6 +368,105 @@ button:disabled {
         gap: 10px;
         text-align: center;
     }
+}
 
+.upload-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
 
+.upload-info {
+    flex-basis: 100%;
+    margin-top: 8px;
+}
+
+.upload-info small {
+    color: #888;
+    font-size: 12px;
+}
+
+.upload-info code {
+    background: #333;
+    padding: 2px 4px;
+    border-radius: 2px;
+    color: #ff9500;
+    font-family: inherit;
+}
+
+.upload-controls button {
+    background: #222;
+    color: #ff9500;
+    border: 1px solid #ff9500;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s, color 0.2s;
+}
+.upload-controls button:hover {
+    background: #ff9500;
+    color: #222;
+}
+
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.6);
+}
+
+.modal-content {
+    background-color: #1a1a1a;
+    margin: 60px auto;
+    padding: 24px 32px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 480px;
+    color: #fff;
+    position: relative;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.4);
+}
+
+.close {
+    color: #ff9500;
+    position: absolute;
+    top: 12px;
+    right: 18px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.close:hover {
+    color: #fff;
+}
+
+#filesList {
+    list-style: none;
+    padding: 0;
+    margin: 18px 0 0 0;
+}
+#filesList li {
+    margin-bottom: 10px;
+}
+#filesList a {
+    color: #ff9500;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 15px;
+}
+#filesList a:hover {
+    color: #fff;
+    background: #ff9500;
+    border-radius: 3px;
+    padding: 2px 6px;
 }

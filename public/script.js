@@ -41,6 +41,8 @@ class QChatInterface {
             // Start Q Chat automatically
             setTimeout(() => this.startQChat(), 500);
         });
+
+        this.setupUploadAndFilesModal();
     }
 
     initializeEventListeners() {
@@ -144,44 +146,44 @@ class QChatInterface {
 
     truncateEmptyLines(input) {
         if (!input) return '';
-        
+
         // Split into lines
         const lines = input.split('\n');
-        
+
         // Find first non-empty line from the beginning
         let startIndex = 0;
         while (startIndex < lines.length && lines[startIndex].trim() === '') {
             startIndex++;
         }
-        
+
         // Find first non-empty line from the end
         let endIndex = lines.length - 1;
         while (endIndex >= 0 && lines[endIndex].trim() === '') {
             endIndex--;
         }
-        
+
         // If all lines are empty, return empty string
         if (startIndex > endIndex) {
             return '';
         }
-        
+
         // Return the trimmed lines joined back together
         return lines.slice(startIndex, endIndex + 1).join('\n');
     }
-    
+
     displayCleanUserInput(input) {
         // Create a clean user input block immediately
         this.createNewBlock('user');
-        
+
         // Clean the input properly - remove quotes and format nicely
         const cleanInput = input.replace(/^["']|["']$/g, '').trim();
         const formattedInput = `> ${cleanInput}`;
-        
+
         // Use plain text, not ANSI conversion to avoid duplicate prompts
         this.currentBlock.innerHTML = formattedInput;
         this.finalizeCurrentBlock();
+
         
-        console.log('✅ DISPLAYED CLEAN USER INPUT:', JSON.stringify(cleanInput));
     }
 
     clearInput() {
@@ -257,7 +259,7 @@ class QChatInterface {
     }
 
     showSelectInterface() {
-        console.log('showSelectInterface called');
+        
 
         // Hide text input
         this.inputSection.style.display = 'none';
@@ -265,21 +267,21 @@ class QChatInterface {
         // Create or show select interface
         let selectInterface = document.getElementById('selectInterface');
         if (!selectInterface) {
-            console.log('Creating new select interface');
+            
             selectInterface = this.createSelectInterface();
         } else {
-            console.log('Using existing select interface');
+            
         }
 
         // Parse the current terminal content to extract options
-        console.log('Parsing select options from terminal content');
+        
         this.parseSelectOptions(selectInterface);
         selectInterface.style.display = 'block';
-        console.log('Select interface displayed');
+        
     }
 
     createSelectInterface() {
-        console.log('Creating select interface');
+        
 
         const selectInterface = document.createElement('div');
         selectInterface.id = 'selectInterface';
@@ -298,7 +300,7 @@ class QChatInterface {
 
         // Check if we need to create a model selection interface directly
         if (this.rawBuffer.includes('/model') || this.rawBuffer.includes('Select a model')) {
-            console.log('Creating model selection interface directly');
+            
             const optionsContainer = selectInterface.querySelector('#selectOptions');
 
             // Create model options directly
@@ -340,17 +342,17 @@ class QChatInterface {
     }
 
     parseSelectOptions(selectInterface) {
-        console.log('parseSelectOptions called');
+        
 
         // Get the terminal content
         const terminalContent = this.terminal.textContent || this.terminal.innerText;
         const lines = terminalContent.split('\n');
-        console.log('Terminal content lines:', lines.length);
+        
 
         // Also check the raw buffer for ANSI codes
         const rawLines = this.rawBuffer.split(/\r?\n/);
-        console.log('Raw buffer lines:', rawLines.length);
-        console.log('Raw buffer sample:', JSON.stringify(this.rawBuffer.substring(0, 200)));
+        
+        
 
         const optionsContainer = document.getElementById('selectOptions');
         optionsContainer.innerHTML = '';
@@ -601,26 +603,20 @@ class QChatInterface {
         // BALANCED APPROACH: Allow first user input display, suppress only duplicates
         if (this.lastSentInput && this.isWaitingForInput === false) {
             const userInput = this.lastSentInput.trim();
-            
+
             // Only suppress if this looks like cascading echo patterns (multiple prompts)
             const hasCascadingPattern = />\s*\w+>\s*\w+/.test(cleanedData);
             const hasMultiplePrompts = (cleanedData.match(/>/g) || []).length > 1;
-            
+
             // Allow first occurrence of user input, suppress only cascading duplicates
             if (hasCascadingPattern || hasMultiplePrompts) {
-                console.log('🚫 SUPPRESSING CASCADING ECHO ONLY:', {
-                    userInput: JSON.stringify(userInput.substring(0, 50)),
-                    hasCascadingPattern,
-                    hasMultiplePrompts,
-                    suppressedData: JSON.stringify(cleanedData.substring(0, 200))
-                });
                 return; // Only suppress cascading patterns
             }
         }
 
         // Allow all other content (including first user input and all bot responses)
-        console.log('✅ ALLOWING ALL LEGITIMATE OUTPUT:', JSON.stringify(cleanedData.substring(0, 100)));
         
+
         // Add cleaned data to raw buffer
         this.rawBuffer += cleanedData;
 
@@ -628,7 +624,7 @@ class QChatInterface {
         // Don't trigger on help text that mentions /model
         if (this.lastSentInput === '/model' &&
             (data.raw.includes('❯') || data.raw.includes('Select a model for this chat session'))) {
-            console.log('Model selection command detected!');
+            
 
             // Extract model selection data directly from the raw output
             const modelData = this.extractModelSelectionData(data.raw);
@@ -689,11 +685,6 @@ class QChatInterface {
 
         // Debug: User input echo debugging only
         if (this.lastSentInput && (textOnly.includes(this.lastSentInput.trim()) || textOnly.includes('>'))) {
-            console.log('🔍 USER INPUT DEBUG:', {
-                textOnly: JSON.stringify(textOnly),
-                lastSentInput: JSON.stringify(this.lastSentInput),
-                hasCurrentBlock: !!this.currentBlock
-            });
         }
 
         // Use the full lineContent for comprehensive thinking detection
@@ -703,42 +694,32 @@ class QChatInterface {
         const hasSpinnerSequence = /\x1b\[[0-9;]*[mK].*?[Tt]hinking/i.test(lineContent);
         const hasMultilineThinking = /\s+\.{2,}\s*\n\s*[Tt]hinking/i.test(lineContent);
         const hasSimpleThinking = /^\s*[Tt]hinking\.?\s*$/i.test(textOnly); // Just "Thinking." by itself
-        
+
         const hasThinkingPattern = hasUnicodeSpinner || hasDotsThinking || hasThinkingDots || hasSpinnerSequence || hasMultilineThinking || hasSimpleThinking;
-        
+
         if (hasThinkingPattern) {
-            console.log('🤔 COMPLETE LINE: Thinking pattern detected:', {
-                unicode: hasUnicodeSpinner,
-                dots: hasDotsThinking,
-                thinkingDots: hasThinkingDots,
-                spinner: hasSpinnerSequence,
-                multiline: hasMultilineThinking,
-                simple: hasSimpleThinking,
-                lineContent: JSON.stringify(lineContent.substring(0, 100)),
-                textOnly: JSON.stringify(textOnly)
-            });
-            
+
             // For complete lines, try to extract actual content mixed with thinking
             let contentWithoutThinking = lineContent;
-            
+
             // Remove thinking patterns more carefully
             contentWithoutThinking = contentWithoutThinking.replace(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]\s*Thinking\.{0,3}/g, ''); // Remove spinner + "Thinking..."
             contentWithoutThinking = contentWithoutThinking.replace(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]\s*/g, ''); // Remove remaining spinners
             contentWithoutThinking = contentWithoutThinking.replace(/…/g, ''); // Remove ellipsis
-            
+
             // Clean ANSI sequences and extract text
             const cleanedText = this.cleanAnsiSequences(contentWithoutThinking);
             const extractedText = cleanedText.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').trim();
-            
+
             // If there's substantial actual content mixed in, process it
             if (extractedText.length > 20) { // Only if we have substantial content
                 // Remove thinking element if it exists
                 this.removeThinkingElement();
-                
+
                 // Process the cleaned content as normal line content
                 textOnly = extractedText;
                 processedLineContent = this.convertAnsiToHtml(extractedText);
-                
+
                 // Continue processing as normal content (don't return early)
             } else {
                 // Pure thinking or minimal content - show animation only
@@ -765,16 +746,11 @@ class QChatInterface {
             // Clean the user input by removing quotes and trimming
             const userInput = this.lastSentInput.replace(/^["']|["']$/g, '').trim();
             const expectedPrompt = `> ${userInput}`;
-            
-            console.log('🔍 ECHO FILTER CHECK:', {
-                textOnly: JSON.stringify(textOnly),
-                expectedPrompt: JSON.stringify(expectedPrompt),
-                willFilter: textOnly === expectedPrompt
-            });
-            
+
+
             // Only filter exact prompt patterns, not standalone user input
             if (textOnly === expectedPrompt) {
-                console.log('🚫 Filtered prompt echo:', textOnly);
+                
                 return; // Skip obvious prompt echoes
             }
         }
@@ -782,7 +758,7 @@ class QChatInterface {
         // DON'T skip empty lines - preserve them for formatting
         // Only skip lines that are completely empty AND have no formatting content
         if (processedLineContent.trim() === '' && !processedLineContent.includes('\x1b')) {
-            console.log('📝 Processing empty line for formatting');
+            
             // Still process empty lines but as formatting
             if (this.currentBlock) {
                 this.updateCurrentBlock('\n');
@@ -792,26 +768,21 @@ class QChatInterface {
 
         // Process normal content - ensure bot responses get proper styling
         const detectedType = this.detectBlockType(textOnly);
-        
+
         // Skip creating blocks for echo patterns - just ignore them completely
         if (detectedType === 'echo') {
-            console.log('🚫 SKIPPING ECHO BLOCK CREATION:', JSON.stringify(textOnly.substring(0, 50)));
+            
             return; // Don't create any block for echo patterns
         }
-        
+
         // Debug user input block detection
         if (detectedType === 'user' || textOnly.includes('>')) {
-            console.log('👤 USER BLOCK DEBUG:', {
-                detectedType,
-                textOnly: JSON.stringify(textOnly.substring(0, 50)),
-                lastSentInput: JSON.stringify(this.lastSentInput)
-            });
         }
-        
+
         if (!this.currentBlock || this.blockType !== detectedType) {
             // Debug block creation for user input
             if (detectedType === 'user') {
-                console.log('🏗️ Creating USER block for:', JSON.stringify(textOnly));
+                
             }
             this.createNewBlock(detectedType);
         }
@@ -824,69 +795,69 @@ class QChatInterface {
     }
 
     createThinkingElement() {
-        console.log('🔧 createThinkingElement called');
         
+
         // Only create if we absolutely don't have one
         if (this.thinkingElement && this.thinkingElement.parentNode) {
-            console.log('🔄 Element exists in DOM, keeping it');
+            
             return;
         }
+
         
-        console.log('🆕 Creating brand new thinking element');
         // Aggressively remove any existing thinking elements first
         this.removeThinkingElement();
-        
+
         this.thinkingElement = document.createElement('div');
         this.thinkingElement.className = 'terminal-block terminal-block-system thinking-animation';
         this.thinkingElement.style.color = '#888888';
         this.thinkingElement.style.fontStyle = 'italic';
-        
+
         // Create animated thinking with dots
         const thinkingText = document.createElement('span');
         thinkingText.textContent = 'Thinking';
-        
+
         const dots = document.createElement('span');
         dots.className = 'thinking-dots';
-        
+
         this.thinkingElement.appendChild(thinkingText);
         this.thinkingElement.appendChild(dots);
         this.terminal.appendChild(this.thinkingElement);
-        
+
         // Animate the dots (only 0, 1, or 2 dots to prevent line breaking)
         let dotCount = 0;
         this.thinkingInterval = setInterval(() => {
             dotCount = (dotCount + 1) % 3; // Changed from % 4 to % 3
             dots.textContent = '.'.repeat(dotCount);
         }, 500);
+
         
-        console.log('✅ Thinking element created with animation');
         this.scrollToBottom();
     }
 
     removeThinkingElement() {
-        console.log('🗑️ removeThinkingElement called');
         
+
         // Count existing thinking elements
         const existingElements = document.querySelectorAll('.thinking-animation');
-        console.log('🗑️ Found', existingElements.length, 'thinking elements to remove');
         
+
         // Remove all thinking elements from DOM first
         existingElements.forEach((el, index) => {
-            console.log('🗑️ Removing thinking element', index);
+            
             if (el.parentNode) {
                 el.parentNode.removeChild(el);
             }
         });
-        
+
         // Clear the reference
         this.thinkingElement = null;
-        console.log('🗑️ Cleared thinking element reference');
         
+
         // Clear any intervals
         if (this.thinkingInterval) {
             clearInterval(this.thinkingInterval);
             this.thinkingInterval = null;
-            console.log('🗑️ Cleared thinking interval');
+            
         }
     }
 
@@ -897,32 +868,24 @@ class QChatInterface {
         const hasThinkingDots = /[Tt]hinking\.{2,}/i.test(partialContent);
         const hasSpinnerSequence = /\x1b\[[0-9;]*[mK].*?[Tt]hinking/i.test(partialContent);
         const hasMultilineThinking = /\s+\.{2,}\s*\n\s*[Tt]hinking/i.test(partialContent);
-        
+
         const hasThinkingPattern = hasUnicodeSpinner || hasDotsThinking || hasThinkingDots || hasSpinnerSequence || hasMultilineThinking;
-        
+
         if (hasThinkingPattern) {
-            console.log('🤔 PARTIAL CONTENT: Thinking pattern detected:', {
-                unicode: hasUnicodeSpinner,
-                dots: hasDotsThinking,
-                thinkingDots: hasThinkingDots,
-                spinner: hasSpinnerSequence,
-                multiline: hasMultilineThinking,
-                content: JSON.stringify(partialContent.substring(0, 100))
-            });
-            
+
             // Show thinking animation instead of the raw text
             if (!this.thinkingElement || !this.thinkingElement.parentNode) {
                 this.createThinkingElement();
             }
             return; // Don't process as regular content - this prevents the thinking text from showing
         }
-        
+
         // If we had thinking and now we have real content, replace thinking with response
         if (this.thinkingElement && partialContent.trim().length > 0) {
-            console.log('🎯 PARTIAL CONTENT: Replacing thinking with actual response');
+            
             this.removeThinkingElement();
         }
-        
+
         // Always update existing blocks with partial content - don't skip short content!
         if (this.currentBlock) {
             // Temporarily add partial content for display
@@ -934,17 +897,17 @@ class QChatInterface {
             // Only apply length restriction when creating NEW blocks
             const cleanContent = this.cleanAnsiSequences(partialContent);
             const textOnly = cleanContent.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').trim();
-            
+
             if (textOnly.length > 5) { // Only create block for substantial content
                 const detectedType = this.detectBlockType(textOnly);
-                
+
                 // Skip creating blocks for echo patterns
                 if (detectedType === 'echo') {
-                    console.log('🚫 SKIPPING ECHO BLOCK CREATION (PARTIAL):', JSON.stringify(textOnly.substring(0, 50)));
+                    
                     return; // Don't create any block for echo patterns
                 }
+
                 
-                console.log('🏗️ PARTIAL CONTENT: Creating new block for substantial content:', detectedType);
                 this.createNewBlock(detectedType);
                 this.updateCurrentBlock(this.convertAnsiToHtml(partialContent));
             }
@@ -954,16 +917,16 @@ class QChatInterface {
     checkForPrompts(rawContent, textContent) {
         // Only debug model selection if user actually ran /model
         if (this.lastSentInput === '/model' && (rawContent.includes('❯') || rawContent.includes('Select a model'))) {
-            console.log('checkForPrompts detected model selection');
-            console.log('Raw content sample:', JSON.stringify(rawContent.substring(0, 200)));
-            console.log('Text content sample:', JSON.stringify(textContent.substring(0, 200)));
+            
+            
+            
         }
 
         // Special case for model selection - only if user ran /model command
         if (this.lastSentInput === '/model' &&
             ((rawContent.includes('❯') && rawContent.includes('Select')) ||
              (rawContent.includes('Select a model') && rawContent.includes('chat session')))) {
-            console.log('Direct model selection detection');
+            
             this.finalizeCurrentBlock();
             this.showSelectInterface();
             return;
@@ -986,12 +949,7 @@ class QChatInterface {
 
         // Debug: Log select options detection only for actual prompts
         if (hasSelectOptions && this.lastSentInput === '/model') {
-            console.log('hasSelectOptions detected:', true);
-            console.log('Pattern matches:', {
-                pattern1: textContent.includes('?') && textContent.includes('❯'),
-                pattern2: textContent.includes('Select a model') && textContent.includes('chat session'),
-                pattern3: rawContent.includes('[?') && rawContent.includes('Select') && rawContent.includes('❯')
-            });
+            
         }
 
         // Check for any prompt-like pattern
@@ -1009,7 +967,7 @@ class QChatInterface {
     cleanAnsiSequences(data) {
         // Debug: Log raw data before cleaning
         if (data.includes('/model') || data.includes('Select a model') || data.includes('❯')) {
-            console.log('Before ANSI cleaning:', JSON.stringify(data));
+            
         }
 
         // Preserve important characters like ❯ before cleaning
@@ -1023,7 +981,7 @@ class QChatInterface {
 
         // Debug: Log preserved data
         if (data.includes('/model') || data.includes('Select a model') || data.includes('❯')) {
-            console.log('After preserving special chars:', JSON.stringify(preserved));
+            
         }
 
         return preserved
@@ -1149,12 +1107,6 @@ class QChatInterface {
 
         // Debug user block content updates
         if (this.blockType === 'user') {
-            console.log('👤 USER BLOCK CONTENT UPDATE:', {
-                blockType: this.blockType,
-                content: JSON.stringify(content),
-                blockBuffer: JSON.stringify(this.blockBuffer),
-                currentBlockHTML: this.currentBlock.innerHTML
-            });
         }
 
         // Add content to buffer
@@ -1162,15 +1114,11 @@ class QChatInterface {
 
         // Process content and update block display
         const processedContent = this.convertAnsiToHtml(this.blockBuffer);
-        
+
         // Debug processed content for user blocks
         if (this.blockType === 'user') {
-            console.log('👤 USER BLOCK PROCESSED:', {
-                processedContent: JSON.stringify(processedContent),
-                finalHTML: this.currentBlock.innerHTML
-            });
         }
-        
+
         this.currentBlock.innerHTML = processedContent;
         this.scrollToBottom();
     }
@@ -1179,94 +1127,80 @@ class QChatInterface {
         if (this.currentBlock && this.blockBuffer) {
             // Debug user block finalization
             if (this.blockType === 'user') {
-                console.log('👤 USER BLOCK FINALIZE:', {
-                    blockType: this.blockType,
-                    originalBuffer: JSON.stringify(this.blockBuffer),
-                    beforeHTML: this.currentBlock.innerHTML
-                });
             }
-            
+
             // Strip only trailing blank lines from block content (preserve leading ones)
             let cleanedBuffer = this.blockBuffer;
-            
+
             // Split into lines for processing
             let lines = cleanedBuffer.split('\n');
-            
+
             // Remove only trailing empty lines
             while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
                 lines.pop();
             }
-            
+
             // Rejoin the lines
             cleanedBuffer = lines.join('\n');
-            
+
             // Final processing of the cleaned block content
             const finalContent = this.convertAnsiToHtml(cleanedBuffer);
             this.currentBlock.innerHTML = finalContent;
-            
+
             // Debug user block final result
             if (this.blockType === 'user') {
-                console.log('👤 USER BLOCK FINAL RESULT:', {
-                    cleanedBuffer: JSON.stringify(cleanedBuffer),
-                    finalContent: JSON.stringify(finalContent),
-                    finalHTML: this.currentBlock.innerHTML
-                });
             }
+
             
-            console.log('🧹 Block finalized with trailing blank lines stripped');
         }
     }
 
     detectBlockType(content) {
-        // MUCH MORE RESTRICTIVE: Since we display user input immediately, 
+        // MUCH MORE RESTRICTIVE: Since we display user input immediately,
         // any content coming through the echo system should be bot response
-        
-        console.log('🔍 RESTRICTIVE BLOCK DETECTION:', {
-            content: JSON.stringify(content.trim().substring(0, 100)),
-            lastSentInput: JSON.stringify(this.lastSentInput ? this.lastSentInput.substring(0, 50) : null)
-        });
-        
+
+
         // Rule 1: NEVER classify echoed user input as user input since we display it immediately
         // Any content that looks like user input echo should be completely suppressed
         if (this.lastSentInput && content.trim().startsWith('> ')) {
             const cleanUserInput = this.lastSentInput.replace(/^["']|["']$/g, '').trim();
             const expectedPrompt = `> ${cleanUserInput}`;
-            
+
             if (content.trim() === expectedPrompt || content.includes(expectedPrompt)) {
-                console.log('🚫 SUPPRESSING USER INPUT ECHO: Already displayed immediately');
+                
                 return 'echo'; // Suppress this - we already displayed it
             }
         }
-        
+
         // Rule 2: Block any echo patterns completely
         if (content.includes('> ') && content.match(/>\s*\w+>\s*\w+/)) {
-            console.log('🚫 ECHO PATTERN: Should be filtered');
+            
             return 'echo';
         }
-        
+
         // Rule 3: If content is long or contains AI phrases, it's definitely bot
         const cleanContent = content.replace(/^["']|["']$/g, '').trim();
         const isLongContent = cleanContent.length > 50;
         const hasAIphrases = /I'm Amazon Q|I am Amazon Q|AI assistant|Amazon Web Services|I have access|I can help|built by Amazon/i.test(cleanContent);
-        
+
         if (isLongContent || hasAIphrases) {
-            console.log('🤖 BOT: Long content or AI phrases detected');
+            
             return 'bot';
         }
-        
+
         // Rule 4: Command responses should be bot responses, not system
         if (this.lastSentInput && this.lastSentInput.match(/^\/[a-z]+/)) {
-            console.log('🤖 BOT: Command response (not system)');
+            
             return 'bot'; // Changed from 'system' to 'bot'
         }
-        
+
         // Rule 5: If user sent regular input, assume this is bot response
         if (this.lastSentInput && this.lastSentInput.trim() && !this.lastSentInput.match(/^\/[a-z]+/)) {
-            console.log('🤖 BOT: Default response to user input');
+            
             return 'bot';
         }
+
         
-        console.log('📋 SYSTEM: Default fallback');
         return 'system';
     }
 
@@ -1292,31 +1226,31 @@ class QChatInterface {
         const cleanedContent = this.cleanAnsiSequences(content);
         const textOnly = cleanedContent.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').trim();
         const cleanLine = textOnly; // Use cleanLine for exact matching
-        
+
         // Check for EXACT thinking pattern: "[spinner] Thinking..." OR multiple thinking patterns
         const exactThinkingPattern = /^[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]\s*Thinking\.{3}$/;
         const multipleThinkingPattern = /^([⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]\s*Thinking\.{0,3}[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏\s]*)+[hinking\.]*$/;
-        
+
         if (exactThinkingPattern.test(cleanLine) || multipleThinkingPattern.test(cleanLine)) {
-            console.log('🤔 STREAMING: Thinking pattern detected on cleanLine:', JSON.stringify(cleanLine.substring(0, 100)));
             
+
             // Replace previous element in terminal if it exists and it's not already a thinking animation
             if (this.terminal.lastElementChild && !this.terminal.lastElementChild.classList.contains('thinking-animation')) {
-                console.log('🔄 STREAMING: Removing last terminal element');
+                
                 this.terminal.removeChild(this.terminal.lastElementChild);
             }
-            
+
             // Show thinking animation
             if (!this.thinkingElement || !this.thinkingElement.parentNode) {
                 this.createThinkingElement();
             }
             return;
         }
-        
+
         // Detect other thinking patterns for mixed content
         const hasSpinner = /[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/.test(textOnly);
         const hasThinkingText = textOnly.includes('Thinking');
-        
+
         if (hasSpinner && hasThinkingText) {
             // Remove all thinking patterns and see if anything substantial remains
             let withoutThinking = textOnly;
@@ -1324,19 +1258,19 @@ class QChatInterface {
             withoutThinking = withoutThinking.replace(/Thinking\.{0,3}/g, ''); // Remove "Thinking" with 0-3 dots
             withoutThinking = withoutThinking.replace(/hinking\.{0,3}/g, ''); // Handle truncated "hinking"
             withoutThinking = withoutThinking.replace(/\s+/g, ' ').trim(); // Clean up spaces
-            
+
             const isOnlyThinking = withoutThinking.length === 0;
-            
+
             if (isOnlyThinking) {
                 // Pure thinking - show animation, don't stream
-                console.log('🤔 STREAMING: Pure thinking detected, showing animation');
+                
                 if (!this.thinkingElement || !this.thinkingElement.parentNode) {
                     this.createThinkingElement();
                 }
                 return;
             } else if (withoutThinking.length > 0) {
                 // Mixed content - clean and stream the non-thinking part
-                console.log('🔀 STREAMING: Mixed thinking detected, streaming cleaned content');
+                
                 this.removeThinkingElement();
                 content = this.convertAnsiToHtml(withoutThinking);
             }
@@ -1374,14 +1308,14 @@ class QChatInterface {
     convertAnsiToHtml(text) {
         // Debug: Log input text if it contains model selection content
         if (text.includes('/model') || text.includes('Select a model') || text.includes('❯')) {
-            console.log('convertAnsiToHtml input:', JSON.stringify(text.substring(0, 200)));
+            
         }
 
         // Preserve ASCII spinner sequences by converting them to Unicode equivalents
         let cleaned = text
             // Convert ASCII spinner sequences to Unicode spinners for display
             .replace(/\x1b\[38;5;\d+m\|\x1b\[39m/g, '⠋') // ASCII | to Unicode spinner
-            .replace(/\x1b\[38;5;\d+m\/\x1b\[39m/g, '⠙') // ASCII / to Unicode spinner  
+            .replace(/\x1b\[38;5;\d+m\/\x1b\[39m/g, '⠙') // ASCII / to Unicode spinner
             .replace(/\x1b\[38;5;\d+m-\x1b\[39m/g, '⠹') // ASCII - to Unicode spinner
             .replace(/\x1b\[38;5;\d+m\\\x1b\[39m/g, '⠸') // ASCII \ to Unicode spinner
             // Also handle raw ASCII spinners without color codes
@@ -1431,16 +1365,16 @@ class QChatInterface {
             backgroundColor: null,
             fontWeight: null
         };
-        
+
         // Split text by ANSI sequences - use capturing groups to preserve the sequences
         const parts = escaped.split(/(\x1b\[[0-9;]*m|\x1b\[38;5;\d+m)/);
-        
+
         for (let i = 0; i < parts.length; i++) {
             const part = parts[i];
-            
+
             // Skip empty parts
             if (!part) continue;
-            
+
             if (part.match(/^\x1b\[/)) {
                 // This is an ANSI sequence - update current styles
                 if (part.match(/\x1b\[38;5;(\d+)m/)) {
@@ -1469,7 +1403,7 @@ class QChatInterface {
                     const match = part.match(/\x1b\[([0-9;]+)m/);
                     if (match) {
                         const codes = match[1].split(';');
-                        
+
                         for (let code of codes) {
                             const num = parseInt(code);
                             if (num === 0 || num === 39) {
@@ -1498,7 +1432,7 @@ class QChatInterface {
                 if (currentStyles.color) styles.push(`color: ${currentStyles.color}`);
                 if (currentStyles.backgroundColor) styles.push(`background-color: ${currentStyles.backgroundColor}`);
                 if (currentStyles.fontWeight) styles.push(`font-weight: ${currentStyles.fontWeight}`);
-                
+
                 if (styles.length > 0) {
                     result += `<span style="${styles.join('; ')}">${part}</span>`;
                 } else {
@@ -1522,10 +1456,124 @@ class QChatInterface {
 
         // Debug: Log output result if it contains model selection content
         if (text.includes('/model') || text.includes('Select a model') || text.includes('❯')) {
-            console.log('convertAnsiToHtml output:', result.substring(0, 200));
+            
         }
 
         return result;
+    }
+
+    setupUploadAndFilesModal() {
+        this.uploadFolderBtn = document.getElementById('uploadFolderBtn');
+        this.uploadFileBtn = document.getElementById('uploadFileBtn');
+        this.folderInput = document.getElementById('folderInput');
+        this.fileInput = document.getElementById('fileInput');
+        this.openFilesModalBtn = document.getElementById('openFilesModalBtn');
+        this.filesModal = document.getElementById('filesModal');
+        this.closeFilesModal = document.getElementById('closeFilesModal');
+        this.filesList = document.getElementById('filesList');
+
+        // Open folder picker when upload folder button is clicked
+        this.uploadFolderBtn.addEventListener('click', () => {
+            this.folderInput.value = '';
+            this.folderInput.click();
+        });
+
+        // Open file picker when upload files button is clicked
+        this.uploadFileBtn.addEventListener('click', () => {
+            this.fileInput.value = '';
+            this.fileInput.click();
+        });
+
+        // Handle folder selection
+        this.folderInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+            await this.uploadFiles(files);
+        });
+
+        // Handle individual file selection
+        this.fileInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+            await this.uploadFiles(files);
+        });
+
+        // Open modal and fetch file list
+        this.openFilesModalBtn.addEventListener('click', () => {
+            this.showFilesModal();
+        });
+        this.closeFilesModal.addEventListener('click', () => {
+            this.filesModal.style.display = 'none';
+        });
+        window.addEventListener('click', (e) => {
+            if (e.target === this.filesModal) {
+                this.filesModal.style.display = 'none';
+            }
+        });
+    }
+
+    async uploadFiles(files) {
+        const formData = new FormData();
+        files.forEach(f => formData.append('files', f, f.webkitRelativePath || f.name));
+        
+        try {
+            await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+            alert('Upload successful!');
+        } catch (err) {
+            alert('Upload failed: ' + err.message);
+        }
+    }
+
+    async showFilesModal() {
+        try {
+            const res = await fetch('/files');
+            const data = await res.json();
+            this.filesList.innerHTML = '';
+            if (data.files && data.files.length) {
+                data.files.forEach(filename => {
+                    const li = document.createElement('li');
+                    const link = document.createElement('a');
+                    link.href = `/download/${encodeURIComponent(filename)}`;
+                    link.textContent = filename;
+                    link.setAttribute('download', filename);
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.downloadFile(filename);
+                    });
+                    li.appendChild(link);
+                    this.filesList.appendChild(li);
+                });
+            } else {
+                this.filesList.innerHTML = '<li>No files uploaded.</li>';
+            }
+            this.filesModal.style.display = 'block';
+        } catch (err) {
+            this.filesList.innerHTML = '<li>Error loading files.</li>';
+            this.filesModal.style.display = 'block';
+        }
+    }
+
+    async downloadFile(filename) {
+        const url = `/download/${encodeURIComponent(filename)}`;
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Download failed');
+            const blob = await res.blob();
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+            }, 100);
+        } catch (err) {
+            alert('Download failed: ' + err.message);
+        }
     }
 }
 
