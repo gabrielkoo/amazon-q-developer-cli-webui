@@ -29,7 +29,7 @@ npm install
 
 2. Start the server:
 ```bash
-npm start
+npm start # --host 0.0.0.0 if you want to expose to your network
 ```
 
 3. Open your browser and navigate to `http://localhost:3000`
