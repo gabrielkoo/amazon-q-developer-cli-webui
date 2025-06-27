@@ -4,6 +4,8 @@ A web-based interface for Amazon Q CLI that provides streaming token display, AS
 
 ![Amazon Q Developer CLI WebUI](/screenshot.jpg)
 
+https://github.com/user-attachments/assets/99053791-17c5-4f09-bddb-d5b9ecd61cc0
+
 ## Why?
 
 - Not everyone could install it - e.g. Windows is not supported / Installing WSL is a bit hard for some of us / Not allowed to install
