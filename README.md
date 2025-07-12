@@ -22,14 +22,20 @@ https://github.com/user-attachments/assets/99053791-17c5-4f09-bddb-d5b9ecd61cc0
 
 ## Installation
 
-0. Install Amazon Q Developer CLI and and authenticate with your AWS Builder ID / IAM Identity Center.
+1. Install Amazon Q Developer CLI and and authenticate with your AWS Builder ID / IAM Identity Center.
 
-1. Install dependencies:
+2. Clone this repository
+```bash
+git clone --depth 1 https://github.com/gabrielkoo/amazon-q-developer-cli-webui
+cd amazon-q-developer-cli-webui
+```
+
+3. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Start the server:
+4. Start the server:
 ```bash
 npm start # --host 0.0.0.0 if you want to expose to your network
 ```
