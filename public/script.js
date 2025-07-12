@@ -179,11 +179,9 @@ class QChatInterface {
         const cleanInput = input.replace(/^["']|["']$/g, '').trim();
         const formattedInput = `> ${cleanInput}`;
 
-        // Use plain text, not ANSI conversion to avoid duplicate prompts
-        this.currentBlock.innerHTML = formattedInput;
+        // Use updateCurrentBlock to ensure proper processing
+        this.updateCurrentBlock(formattedInput);
         this.finalizeCurrentBlock();
-
-        
     }
 
     clearInput() {
@@ -259,7 +257,7 @@ class QChatInterface {
     }
 
     showSelectInterface() {
-        
+
 
         // Hide text input
         this.inputSection.style.display = 'none';
@@ -267,21 +265,21 @@ class QChatInterface {
         // Create or show select interface
         let selectInterface = document.getElementById('selectInterface');
         if (!selectInterface) {
-            
+
             selectInterface = this.createSelectInterface();
         } else {
-            
+
         }
 
         // Parse the current terminal content to extract options
-        
+
         this.parseSelectOptions(selectInterface);
         selectInterface.style.display = 'block';
-        
+
     }
 
     createSelectInterface() {
-        
+
 
         const selectInterface = document.createElement('div');
         selectInterface.id = 'selectInterface';
@@ -300,7 +298,7 @@ class QChatInterface {
 
         // Check if we need to create a model selection interface directly
         if (this.rawBuffer.includes('/model') || this.rawBuffer.includes('Select a model')) {
-            
+
             const optionsContainer = selectInterface.querySelector('#selectOptions');
 
             // Create model options directly
@@ -342,17 +340,17 @@ class QChatInterface {
     }
 
     parseSelectOptions(selectInterface) {
-        
+
 
         // Get the terminal content
         const terminalContent = this.terminal.textContent || this.terminal.innerText;
         const lines = terminalContent.split('\n');
-        
+
 
         // Also check the raw buffer for ANSI codes
         const rawLines = this.rawBuffer.split(/\r?\n/);
-        
-        
+
+
 
         const optionsContainer = document.getElementById('selectOptions');
         optionsContainer.innerHTML = '';
@@ -555,7 +553,7 @@ class QChatInterface {
         // For select prompts, we need to send the raw key codes that the CLI expects
         let keyCode = '';
 
-        switch(key) {
+        switch (key) {
             case 'ArrowUp':
                 keyCode = '\x1b[A'; // ANSI escape sequence for up arrow
                 break;
@@ -578,21 +576,15 @@ class QChatInterface {
     }
 
     handleQOutput(data) {
-        // Aggressively remove ALL problematic sequences that cause display issues
+        // Remove only actual ANSI escape sequences, not literal bracket text
         let cleanedData = data.raw
-            // Remove cursor control sequences - be more aggressive
+            // Remove cursor control sequences with proper escape sequences
             .replace(/\x1b\[\?25[hl]/g, '') // Show/hide cursor
             .replace(/\x1b\[\?2004[hl]/g, '') // Bracketed paste mode
-            .replace(/\[\?25[hl]/g, '') // Show/hide cursor without escape
-            .replace(/\[\?2004[hl]/g, '') // Bracketed paste mode without escape
-            // Remove ALL cursor movement sequences - be very aggressive
+            // Remove cursor movement sequences - only with proper escape sequences
             .replace(/\x1b\[[ABCD]/g, '') // Cursor movements with escape
             .replace(/\x1b\[\d+[ABCD]/g, '') // Cursor movements with numbers
-            .replace(/\[A/g, '') // Cursor up without escape (this is what's showing in screenshot)
-            .replace(/\[B/g, '') // Cursor down without escape
-            .replace(/\[C/g, '') // Cursor forward without escape
-            .replace(/\[D/g, '') // Cursor backward without escape
-            // Remove other problematic sequences
+            // Remove other control sequences - only with proper escape sequences
             .replace(/\x1b\[K/g, '') // Clear line
             .replace(/\x1b\[J/g, '') // Clear screen
             .replace(/\x1b\[H/g, '') // Home cursor
@@ -615,7 +607,7 @@ class QChatInterface {
         }
 
         // Allow all other content (including first user input and all bot responses)
-        
+
 
         // Add cleaned data to raw buffer
         this.rawBuffer += cleanedData;
@@ -624,7 +616,7 @@ class QChatInterface {
         // Don't trigger on help text that mentions /model
         if (this.lastSentInput === '/model' &&
             (data.raw.includes('❯') || data.raw.includes('Select a model for this chat session'))) {
-            
+
 
             // Extract model selection data directly from the raw output
             const modelData = this.extractModelSelectionData(data.raw);
@@ -741,24 +733,37 @@ class QChatInterface {
             return;
         }
 
-        // User input echo filtering debug
-        if (this.lastSentInput && !this.currentBlock) {
-            // Clean the user input by removing quotes and trimming
+        // Enhanced echo detection and removal
+        if (this.lastSentInput) {
             const userInput = this.lastSentInput.replace(/^["']|["']$/g, '').trim();
-            const expectedPrompt = `> ${userInput}`;
+            const userInputLines = userInput.split('\n').map(line => line.trim());
+            const firstLine = userInputLines[0];
+            const expectedPrompt = `> ${firstLine}`;
 
+            // If content starts with the echo, remove it and process the rest
+            if (textOnly.startsWith(expectedPrompt)) {
+                const afterEcho = textOnly.substring(expectedPrompt.length).trim();
 
-            // Only filter exact prompt patterns, not standalone user input
-            if (textOnly === expectedPrompt) {
-                
-                return; // Skip obvious prompt echoes
+                // If there's content after the echo, process only that part
+                if (afterEcho.length > 0) {
+                    textOnly = afterEcho;
+                    processedLineContent = this.convertAnsiToHtml(afterEcho);
+                } else {
+                    // If it's just the echo with nothing after, skip it
+                    return;
+                }
+            }
+
+            // Also check for exact matches when no block is active
+            if (!this.currentBlock && textOnly === expectedPrompt) {
+                return; // Skip exact prompt echoes
             }
         }
 
         // DON'T skip empty lines - preserve them for formatting
         // Only skip lines that are completely empty AND have no formatting content
         if (processedLineContent.trim() === '' && !processedLineContent.includes('\x1b')) {
-            
+
             // Still process empty lines but as formatting
             if (this.currentBlock) {
                 this.updateCurrentBlock('\n');
@@ -771,7 +776,6 @@ class QChatInterface {
 
         // Skip creating blocks for echo patterns - just ignore them completely
         if (detectedType === 'echo') {
-            
             return; // Don't create any block for echo patterns
         }
 
@@ -782,7 +786,7 @@ class QChatInterface {
         if (!this.currentBlock || this.blockType !== detectedType) {
             // Debug block creation for user input
             if (detectedType === 'user') {
-                
+
             }
             this.createNewBlock(detectedType);
         }
@@ -794,16 +798,56 @@ class QChatInterface {
         }
     }
 
+    detectBlockType(content) {
+        // Enhanced echo detection for both single-line and multiline input
+        if (this.lastSentInput) {
+            const userInput = this.lastSentInput.replace(/^["']|["']$/g, '').trim();
+            const userInputLines = userInput.split('\n').map(line => line.trim());
+            const firstLine = userInputLines[0];
+
+            // Check for exact full input echo
+            const expectedPrompt = `> ${userInput}`;
+            if (content.trim() === expectedPrompt) {
+                return 'echo';
+            }
+
+            // Check for first line echo (common with multiline input)
+            const firstLinePrompt = `> ${firstLine}`;
+            if (content.trim() === firstLinePrompt) {
+                return 'echo';
+            }
+
+            // Check if content is just one of the input lines
+            for (const line of userInputLines) {
+                if (content.trim() === line || content.trim() === `> ${line}`) {
+                    return 'echo';
+                }
+            }
+        }
+
+        // If content is long or contains AI phrases, it's bot response
+        const cleanContent = content.replace(/^["']|["']$/g, '').trim();
+        const isLongContent = cleanContent.length > 50;
+        const hasAIphrases = /I don't have access|I can help|Quick options|Command line options/i.test(cleanContent);
+
+        if (isLongContent || hasAIphrases) {
+            return 'bot';
+        }
+
+        // Default to system for other content
+        return 'system';
+    }
+
     createThinkingElement() {
-        
+
 
         // Only create if we absolutely don't have one
         if (this.thinkingElement && this.thinkingElement.parentNode) {
-            
+
             return;
         }
 
-        
+
         // Aggressively remove any existing thinking elements first
         this.removeThinkingElement();
 
@@ -830,20 +874,20 @@ class QChatInterface {
             dots.textContent = '.'.repeat(dotCount);
         }, 500);
 
-        
+
         this.scrollToBottom();
     }
 
     removeThinkingElement() {
-        
+
 
         // Count existing thinking elements
         const existingElements = document.querySelectorAll('.thinking-animation');
-        
+
 
         // Remove all thinking elements from DOM first
         existingElements.forEach((el, index) => {
-            
+
             if (el.parentNode) {
                 el.parentNode.removeChild(el);
             }
@@ -851,13 +895,13 @@ class QChatInterface {
 
         // Clear the reference
         this.thinkingElement = null;
-        
+
 
         // Clear any intervals
         if (this.thinkingInterval) {
             clearInterval(this.thinkingInterval);
             this.thinkingInterval = null;
-            
+
         }
     }
 
@@ -882,7 +926,7 @@ class QChatInterface {
 
         // If we had thinking and now we have real content, replace thinking with response
         if (this.thinkingElement && partialContent.trim().length > 0) {
-            
+
             this.removeThinkingElement();
         }
 
@@ -903,11 +947,11 @@ class QChatInterface {
 
                 // Skip creating blocks for echo patterns
                 if (detectedType === 'echo') {
-                    
+
                     return; // Don't create any block for echo patterns
                 }
 
-                
+
                 this.createNewBlock(detectedType);
                 this.updateCurrentBlock(this.convertAnsiToHtml(partialContent));
             }
@@ -917,16 +961,16 @@ class QChatInterface {
     checkForPrompts(rawContent, textContent) {
         // Only debug model selection if user actually ran /model
         if (this.lastSentInput === '/model' && (rawContent.includes('❯') || rawContent.includes('Select a model'))) {
-            
-            
-            
+
+
+
         }
 
         // Special case for model selection - only if user ran /model command
         if (this.lastSentInput === '/model' &&
             ((rawContent.includes('❯') && rawContent.includes('Select')) ||
-             (rawContent.includes('Select a model') && rawContent.includes('chat session')))) {
-            
+                (rawContent.includes('Select a model') && rawContent.includes('chat session')))) {
+
             this.finalizeCurrentBlock();
             this.showSelectInterface();
             return;
@@ -934,22 +978,22 @@ class QChatInterface {
 
         // Check for colored prompt pattern (before ANSI cleaning)
         const hasColoredPrompt = rawContent.match(/\x1b\[38;5;13m>\s*\x1b\[39m/) ||
-                                rawContent.match(/\x1b\[[0-9;]*m>\s*\x1b\[[0-9;]*m/) ||
-                                rawContent.includes('> ');
+            rawContent.match(/\x1b\[[0-9;]*m>\s*\x1b\[[0-9;]*m/) ||
+            rawContent.includes('> ');
 
         // Check for simple prompt patterns
         const hasSimplePrompt = textContent.trim().endsWith('>') ||
-                               textContent.includes('> ') ||
-                               rawContent.includes('\x1b[38;5;13m>');
+            textContent.includes('> ') ||
+            rawContent.includes('\x1b[38;5;13m>');
 
         // Check for select prompt (multiple choice) - only for actual prompts, not help text
         const hasSelectOptions = (textContent.includes('?') && textContent.includes('❯')) ||
-                                (this.lastSentInput === '/model' && textContent.includes('Select a model') && textContent.includes('chat session')) ||
-                                (rawContent.includes('[?') && rawContent.includes('Select') && rawContent.includes('❯'));
+            (this.lastSentInput === '/model' && textContent.includes('Select a model') && textContent.includes('chat session')) ||
+            (rawContent.includes('[?') && rawContent.includes('Select') && rawContent.includes('❯'));
 
         // Debug: Log select options detection only for actual prompts
         if (hasSelectOptions && this.lastSentInput === '/model') {
-            
+
         }
 
         // Check for any prompt-like pattern
@@ -967,7 +1011,7 @@ class QChatInterface {
     cleanAnsiSequences(data) {
         // Debug: Log raw data before cleaning
         if (data.includes('/model') || data.includes('Select a model') || data.includes('❯')) {
-            
+
         }
 
         // Preserve important characters like ❯ before cleaning
@@ -981,7 +1025,7 @@ class QChatInterface {
 
         // Debug: Log preserved data
         if (data.includes('/model') || data.includes('Select a model') || data.includes('❯')) {
-            
+
         }
 
         return preserved
@@ -1006,7 +1050,7 @@ class QChatInterface {
             .replace(/\x1b\[[0-9;]*$/g, '')
             // Remove carriage returns that interfere with display
             .replace(/\r/g, '');
-            // DON'T remove color codes - let convertAnsiToHtml handle them
+        // DON'T remove color codes - let convertAnsiToHtml handle them
     }
 
     processLineBreaks(htmlData) {
@@ -1038,22 +1082,22 @@ class QChatInterface {
         // Check for select/choice prompts (like model selection)
         // Look for the pattern of question mark and selection arrow or model selection text
         const isSelectPrompt = (cleanText.includes('?') && cleanText.includes('❯')) ||
-                              (cleanText.includes('Select a model') && cleanText.includes('chat session')) ||
-                              (cleanText.includes('/model') && cleanText.includes('Select'));
+            (cleanText.includes('Select a model') && cleanText.includes('chat session')) ||
+            (cleanText.includes('/model') && cleanText.includes('Select'));
 
         // More specific prompt detection - look for the actual command prompt pattern
         // The real prompt should have cursor positioning after it
         const isRealPrompt = hasColoredPrompt ||
-                           (rawData.includes('> ') && rawData.includes('\x1b[2C')) || // Cursor positioning
-                           (cleanText === '>' || cleanText === '> ') || // Just a prompt by itself
-                           (cleanText.endsWith('\n>') || cleanText.endsWith('\n> ')); // Prompt on new line
+            (rawData.includes('> ') && rawData.includes('\x1b[2C')) || // Cursor positioning
+            (cleanText === '>' || cleanText === '> ') || // Just a prompt by itself
+            (cleanText.endsWith('\n>') || cleanText.endsWith('\n> ')); // Prompt on new line
 
         // Avoid false positives from content that just happens to contain >
         const isFalsePositive = cleanText.includes('🤖') || // Bot indicator
-                               cleanText.includes('○') || // List bullets
-                               cleanText.includes('disabled') || // Status messages
-                               cleanText.includes('chatting with') || // Intro message
-                               (cleanText.includes('>') && cleanText.length > 10 && !isSelectPrompt); // Long text with >
+            cleanText.includes('○') || // List bullets
+            cleanText.includes('disabled') || // Status messages
+            cleanText.includes('chatting with') || // Intro message
+            (cleanText.includes('>') && cleanText.length > 10 && !isSelectPrompt); // Long text with >
 
 
         if ((isRealPrompt || isSelectPrompt) && !isFalsePositive && !this.isWaitingForInput) {
@@ -1078,6 +1122,61 @@ class QChatInterface {
 
     scrollToBottom() {
         this.terminal.scrollTop = this.terminal.scrollHeight;
+    }
+
+    // Block-based rendering methods
+    createNewBlock(type) {
+        // Finalize current block if it exists
+        if (this.currentBlock) {
+            this.finalizeCurrentBlock();
+        }
+
+        // Create new block
+        this.currentBlock = document.createElement('div');
+        this.currentBlock.className = `terminal-block terminal-block-${type}`;
+        this.blockType = type;
+        this.blockBuffer = '';
+        this.currentBlockContent = '';
+
+        // Add to terminal
+        this.terminal.appendChild(this.currentBlock);
+        this.scrollToBottom();
+    }
+
+    updateCurrentBlock(content) {
+        if (!this.currentBlock) {
+            this.createNewBlock('system');
+        }
+
+        // Add content to buffer
+        this.blockBuffer += content;
+
+        // Process content and update block display
+        const processedContent = this.convertAnsiToHtml(this.blockBuffer);
+        this.currentBlock.innerHTML = processedContent;
+        this.scrollToBottom();
+    }
+
+    finalizeCurrentBlock() {
+        if (this.currentBlock && this.blockBuffer) {
+            // Strip only trailing blank lines from block content (preserve leading ones)
+            let cleanedBuffer = this.blockBuffer;
+
+            // Split into lines for processing
+            let lines = cleanedBuffer.split('\n');
+
+            // Remove only trailing empty lines
+            while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
+                lines.pop();
+            }
+
+            // Rejoin the lines
+            cleanedBuffer = lines.join('\n');
+
+            // Final processing of the cleaned block content
+            const finalContent = this.convertAnsiToHtml(cleanedBuffer);
+            this.currentBlock.innerHTML = finalContent;
+        }
     }
 
     // Block-based rendering methods
@@ -1151,7 +1250,7 @@ class QChatInterface {
             if (this.blockType === 'user') {
             }
 
-            
+
         }
     }
 
@@ -1167,14 +1266,14 @@ class QChatInterface {
             const expectedPrompt = `> ${cleanUserInput}`;
 
             if (content.trim() === expectedPrompt || content.includes(expectedPrompt)) {
-                
+
                 return 'echo'; // Suppress this - we already displayed it
             }
         }
 
         // Rule 2: Block any echo patterns completely
         if (content.includes('> ') && content.match(/>\s*\w+>\s*\w+/)) {
-            
+
             return 'echo';
         }
 
@@ -1184,23 +1283,23 @@ class QChatInterface {
         const hasAIphrases = /I'm Amazon Q|I am Amazon Q|AI assistant|Amazon Web Services|I have access|I can help|built by Amazon/i.test(cleanContent);
 
         if (isLongContent || hasAIphrases) {
-            
+
             return 'bot';
         }
 
         // Rule 4: Command responses should be bot responses, not system
         if (this.lastSentInput && this.lastSentInput.match(/^\/[a-z]+/)) {
-            
+
             return 'bot'; // Changed from 'system' to 'bot'
         }
 
         // Rule 5: If user sent regular input, assume this is bot response
         if (this.lastSentInput && this.lastSentInput.trim() && !this.lastSentInput.match(/^\/[a-z]+/)) {
-            
+
             return 'bot';
         }
 
-        
+
         return 'system';
     }
 
@@ -1232,11 +1331,11 @@ class QChatInterface {
         const multipleThinkingPattern = /^([⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]\s*Thinking\.{0,3}[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏\s]*)+[hinking\.]*$/;
 
         if (exactThinkingPattern.test(cleanLine) || multipleThinkingPattern.test(cleanLine)) {
-            
+
 
             // Replace previous element in terminal if it exists and it's not already a thinking animation
             if (this.terminal.lastElementChild && !this.terminal.lastElementChild.classList.contains('thinking-animation')) {
-                
+
                 this.terminal.removeChild(this.terminal.lastElementChild);
             }
 
@@ -1263,14 +1362,14 @@ class QChatInterface {
 
             if (isOnlyThinking) {
                 // Pure thinking - show animation, don't stream
-                
+
                 if (!this.thinkingElement || !this.thinkingElement.parentNode) {
                     this.createThinkingElement();
                 }
                 return;
             } else if (withoutThinking.length > 0) {
                 // Mixed content - clean and stream the non-thinking part
-                
+
                 this.removeThinkingElement();
                 content = this.convertAnsiToHtml(withoutThinking);
             }
@@ -1308,7 +1407,7 @@ class QChatInterface {
     convertAnsiToHtml(text) {
         // Debug: Log input text if it contains model selection content
         if (text.includes('/model') || text.includes('Select a model') || text.includes('❯')) {
-            
+
         }
 
         // Preserve ASCII spinner sequences by converting them to Unicode equivalents
@@ -1320,7 +1419,7 @@ class QChatInterface {
             .replace(/\x1b\[38;5;\d+m\\\x1b\[39m/g, '⠸') // ASCII \ to Unicode spinner
             // Also handle raw ASCII spinners without color codes
             .replace(/(?<!\w)[\|\/\-\\](?=.*[Tt]hinking)/g, (match) => {
-                const spinners = {'|': '⠋', '/': '⠙', '-': '⠹', '\\': '⠸'};
+                const spinners = { '|': '⠋', '/': '⠙', '-': '⠹', '\\': '⠸' };
                 return spinners[match] || match;
             })
             // Remove broken cursor control sequences that show up as text
@@ -1332,11 +1431,11 @@ class QChatInterface {
             .replace(/\x1b\[\d+;\d+H/g, '') // Remove cursor positioning
             .replace(/\x1b\[\d+C/g, ''); // Remove cursor forward movement
 
-        // First escape HTML to prevent XSS
+        // Escape HTML to prevent XSS, but don't escape > in chat content
         let escaped = cleaned
             .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
+            .replace(/</g, '&lt;');
+        // Don't escape > character as it's commonly used in chat content
 
         // Preserve leading spaces by converting them to non-breaking spaces
         escaped = escaped.replace(/^( +)/gm, (match) => {
@@ -1382,7 +1481,7 @@ class QChatInterface {
                     const colorNum = parseInt(part.match(/\x1b\[38;5;(\d+)m/)[1]);
                     if (colorNum < 16) {
                         const standardColors = ['#000000', '#800000', '#008000', '#808000', '#000080', '#800080', '#008080', '#c0c0c0',
-                                              '#808080', '#ff0000', '#00ff00', '#ffff00', '#0000ff', '#ff00ff', '#00ffff', '#ffffff'];
+                            '#808080', '#ff0000', '#00ff00', '#ffff00', '#0000ff', '#ff00ff', '#00ffff', '#ffffff'];
                         currentStyles.color = standardColors[colorNum];
                     } else if (colorNum < 232) {
                         // 216 color cube
@@ -1456,7 +1555,7 @@ class QChatInterface {
 
         // Debug: Log output result if it contains model selection content
         if (text.includes('/model') || text.includes('Select a model') || text.includes('❯')) {
-            
+
         }
 
         return result;
@@ -1515,7 +1614,7 @@ class QChatInterface {
     async uploadFiles(files) {
         const formData = new FormData();
         files.forEach(f => formData.append('files', f, f.webkitRelativePath || f.name));
-        
+
         try {
             await fetch('/upload', {
                 method: 'POST',
