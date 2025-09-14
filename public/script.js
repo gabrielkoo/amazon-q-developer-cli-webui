@@ -1677,6 +1677,14 @@ class QChatInterface {
 }
 
 // Initialize the interface when the page loads
-document.addEventListener('DOMContentLoaded', () => {
+console.log('Script loaded, checking DOM state...');
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM loaded, creating QChatInterface...');
+        new QChatInterface();
+    });
+} else {
+    console.log('DOM already loaded, creating QChatInterface...');
     new QChatInterface();
-});
+}
+
